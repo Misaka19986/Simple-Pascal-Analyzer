@@ -9,6 +9,4 @@ begin
   read(m);
   k:=F(m);
   write(k)
-  %%%
-  a123124557568696789678
 end
