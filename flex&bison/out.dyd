@@ -60,7 +60,8 @@
                k 10
                ) 22
             EOLN 24
-            EOLN 24
+             124 11
+               a 10
             EOLN 24
              end 2
              EOF 25

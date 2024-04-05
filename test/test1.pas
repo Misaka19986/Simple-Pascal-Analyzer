@@ -9,4 +9,7 @@ begin
   read(m);
   k:=F(m);
   write(k)
+  124a
+  %%%%
+  abcd123456789123456789
 end

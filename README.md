@@ -13,3 +13,12 @@ A UESTC CS experiment
 生成词法分析文件，并对test1进行test
 
 # kuma (handmade)
+
+## make clean
+清除所有生成文件
+
+## make compile
+进行编译
+
+## make test(x)
+进行第x个测试

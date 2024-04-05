@@ -54,5 +54,7 @@
         "ratio": "cpp",
         "regex": "cpp",
         "shared_mutex": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": true,
+    "cmake.sourceDirectory": "/usr/local/CT_exp"
 }

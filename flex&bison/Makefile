@@ -25,7 +25,7 @@ scan_and_test1: lexer.l
 	$(RM) *.o scan.c parser.hpp parser.c lexer.hpp target.c lex.yy.* out.* $(TARGET)
 	$(LEX) --header-file=lexer.h $^
 	$(GCC) lex.yy.c -o $(TARGET) -lfl
-	./$(TARGET) ../test/test1
+	./$(TARGET) ../test/test1.pas
 
 compile_c: 
 	$(GCC) lex.yy.c -o $(TARGET) -lfl
