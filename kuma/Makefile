@@ -9,7 +9,7 @@ TEST1 = ../test/test1.pas
 TEST2 = ../test/test2.pas
 
 # Compile
-compile: kuma.cpp lexer.cpp
+compile: kuma.cpp lexer.cpp parser.cpp
 	$(G++) -o $(TARGET) $^ -std=c++17
 
 test1:

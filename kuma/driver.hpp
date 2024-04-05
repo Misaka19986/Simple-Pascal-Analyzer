@@ -21,7 +21,30 @@ int check_keyword_type(std::string s);
 void put_error(std::string s, int type);
 }  // namespace lexer
 
-namespace parser {}
+namespace parser {
+bool parser();
+bool program();
+bool sub_program();
+bool declaration_table();
+bool declaration();
+bool variable_declaration();
+bool variable();
+bool identifier();
+bool function_declaration();
+bool parameter();
+bool function_body();
+bool execution_table();
+bool execution();
+bool read_statement();
+bool write_statement();
+bool expression();
+bool item();
+bool factor();
+bool constant();
+bool condition();
+bool condition_expression();
+bool relational_operator();
+}  // namespace parser
 
 inline std::string keywords[] = {
     "begin", "end",      "integer", "if",    "then",
