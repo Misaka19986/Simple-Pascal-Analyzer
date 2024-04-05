@@ -1,31 +1,35 @@
 #ifndef DRIVER_HPP
 #define DRIVER_HPP
 
+#include <ctype.h>
 #include <iostream>
-#include <string>
 #include <regex>
+#include <string>
 
 namespace core {
-    inline FILE* in;
-    inline FILE* out;
-    inline FILE* err;
+inline FILE* in;
+inline FILE* out;
+inline FILE* err;
 
-    inline int lines = 1;
-}
-
+inline int lines = 1;
+}  // namespace core
 
 namespace lexer {
-    void scan();
-    void put_token(std::string s, int symbol);
-    int  check_type(std::string s);
-    void put_error(std::string s, int type);
-}
+void scan();
+void put_token(std::string s, int symbol);
+int check_keyword_type(std::string s);
+void put_error(std::string s, int type);
+}  // namespace lexer
 
-namespace parser {
+namespace parser {}
 
-}
+inline std::string keywords[] = {
+    "begin", "end",      "integer", "if",    "then",
+    "else",  "function", "read",    "write",
+};
 
 enum Symbols {
+    /* keywords */
     BEGIN = 1,
     END = 2,
     INTEGER = 3,
@@ -35,22 +39,26 @@ enum Symbols {
     FUNCTION = 7,
     READ = 8,
     WRITE = 9,
+
+    /* others */
     IDENTIFIER = 10,
     CONST_NUM = 11,
-    EQUAL = 12, // =
-    NOT_EQUAL = 13, // <>
-    LESS_EQUAL = 14,    // <=
-    LESS_THAN = 15, // <
-    GREATER_EQUAL = 16, // >=
-    GREATER_THAN = 17,  // >
-    MINUS = 18, // -
-    TIMES = 19, // *
-    ASSIGN = 20,    // :=
-    LEFT_ROUND_BRACKET = 21,    // (
-    RIGHT_ROUND_BRACKET = 22,   // )
-    SEMICOLON = 23, // ;
-    EOLN = 24,  // \n
-    EOF_ = 25,   // Avoid confliction
+
+    /* symbols */
+    EQUAL = 12,                // =
+    NOT_EQUAL = 13,            // <>
+    LESS_EQUAL = 14,           // <=
+    LESS_THAN = 15,            // <
+    GREATER_EQUAL = 16,        // >=
+    GREATER_THAN = 17,         // >
+    MINUS = 18,                // -
+    TIMES = 19,                // *
+    ASSIGN = 20,               // :=
+    LEFT_ROUND_BRACKET = 21,   // (
+    RIGHT_ROUND_BRACKET = 22,  // )
+    SEMICOLON = 23,            // ;
+    EOLN = 24,                 // \n
+    EOF_ = 25,                 // Avoid confliction
 };
 
 enum Errors {

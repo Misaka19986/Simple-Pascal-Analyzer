@@ -6,6 +6,7 @@ G++ = g++
 TARGET = runme
 
 TEST1 = ../test/test1.pas
+TEST2 = ../test/test2.pas
 
 # Compile
 compile: kuma.cpp lexer.cpp
@@ -13,6 +14,9 @@ compile: kuma.cpp lexer.cpp
 
 test1:
 	./$(TARGET) $(TEST1)
+
+test2:
+	./$(TARGET) $(TEST2)
 
 # Clean generated file
 clean:
