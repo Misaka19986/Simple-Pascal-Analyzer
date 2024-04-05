@@ -176,5 +176,9 @@ void lexer::put_error(std::string s, int type) {
                 "identifier or constant is too long: '%.10s'..., at line %d\n",
                 s.c_str(), core::lines);
             break;
+        case INVALID_ASSIGN_ERROR:
+            fprintf(core::err, "invalid assignment: missing '=', at line %d\n",
+                    core::lines);
+            break;
     }
 }

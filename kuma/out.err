@@ -1,5 +1,1 @@
-syntax error: '%', at line 13
-syntax error: '%', at line 13
-syntax error: '%', at line 13
-syntax error: '%', at line 13
-identifier or constant is too long: 'abcd123456'..., at line 14
+invalid assignment: missing '=', at line 2
