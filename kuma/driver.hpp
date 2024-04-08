@@ -5,6 +5,7 @@
 #include <iostream>
 #include <regex>
 #include <string>
+#include <vector>
 
 namespace core {
 inline FILE* in;
@@ -22,14 +23,19 @@ void put_error(std::string s, int type);
 }  // namespace lexer
 
 namespace parser {
+/* tools */
 bool parser();
+void parse_next_token();
+bool match(int symbol);
+void put_error(int type);
+
+/* states */
 bool program();
 bool sub_program();
 bool declaration_table();
 bool declaration();
 bool variable_declaration();
 bool variable();
-bool identifier();
 bool function_declaration();
 bool parameter();
 bool function_body();
@@ -37,13 +43,14 @@ bool execution_table();
 bool execution();
 bool read_statement();
 bool write_statement();
+bool assignment();
 bool expression();
 bool item();
 bool factor();
-bool constant();
 bool condition();
 bool condition_expression();
 bool relational_operator();
+bool function_call();
 }  // namespace parser
 
 inline std::string keywords[] = {
@@ -85,10 +92,22 @@ enum Symbols {
 };
 
 enum Errors {
-    // Error codes
+    /* lexer error */
     SYNTAX_ERROR = 255,
     INVALID_LENGTH_ERROR = 256,
     INVALID_ASSIGN_ERROR = 257,
+
+    /* parser error */
+    MISSING_BEGIN_ERROR = 258,
+    MISSING_END_ERROR = 259,
+    MISSING_SEMICOLON_ERROR = 260,
+    MISSING_INTEGER_ERROR = 261,
+    MISSING_IDENTIFIER_ERROR = 262,
+    MISSING_FUNCTION_ERROR = 263,
+    MISSING_ROUND_BRACKET_ERROR = 264,
+    ILLEGAL_PARAMETER_ERROR = 265,
+    ILLEGAL_EXECUTION_ERROR = 266,
+
 };
 
 #endif

@@ -65,3 +65,6 @@ relational_operator : <
                     | >=
                     | =
                     | <>
+
+function_call : identifier(variable)
+                | identifier()

@@ -6,6 +6,9 @@
  *
  */
 void lexer::scan() {
+    printf("\nlexer begin\n");
+    fprintf(core::err, "--lexer\n");
+
     std::string token = "";
 
     char ch = fgetc(core::in);
@@ -134,7 +137,7 @@ void lexer::scan() {
 void lexer::put_token(std::string s, int symbol) {
     printf("putting a token %s:%d\n", s.c_str(), symbol);
 
-    fprintf(core::out, "%16s %d\n", s.c_str(), symbol);
+    fprintf(core::out, "%16s %2d %2d\n", s.c_str(), symbol, core::lines);
 }
 
 /**
@@ -173,7 +176,7 @@ void lexer::put_error(std::string s, int type) {
         case INVALID_LENGTH_ERROR:
             fprintf(
                 core::err,
-                "identifier or constant is too long: '%.10s'..., at line %d\n",
+                "identifier or constant is too long: '%.10s...', at line %d\n",
                 s.c_str(), core::lines);
             break;
         case INVALID_ASSIGN_ERROR:

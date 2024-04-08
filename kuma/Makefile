@@ -13,11 +13,11 @@ compile: kuma.cpp lexer.cpp parser.cpp
 	$(G++) -o $(TARGET) $^ -std=c++17
 
 test1:
-	./$(TARGET) $(TEST1)
+	./$(TARGET) $(TEST1) -p
 
 test2:
-	./$(TARGET) $(TEST2)
+	./$(TARGET) $(TEST2) -p
 
 # Clean generated file
 clean:
-	$(RM) out.* $(TARGET)
+	$(RM) middle.* $(TARGET)
