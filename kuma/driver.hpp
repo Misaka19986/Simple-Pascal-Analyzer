@@ -16,7 +16,7 @@ inline int lines = 1;
 }  // namespace core
 
 namespace lexer {
-void scan();
+bool scan();
 void put_token(std::string s, int symbol);
 int check_keyword_type(std::string s);
 void put_error(std::string s, int type);
@@ -32,20 +32,31 @@ void put_error(int type);
 /* states */
 bool program();
 bool sub_program();
+
 bool declaration_table();
+bool declaration_table_prime();
 bool declaration();
+
 bool variable_declaration();
 bool variable();
 bool function_declaration();
 bool parameter();
 bool function_body();
+
 bool execution_table();
+bool execution_table_prime();
 bool execution();
+
 bool read_statement();
 bool write_statement();
 bool assignment();
+
 bool expression();
+bool expression_prime();
+
 bool item();
+bool item_prime();
+
 bool factor();
 bool condition();
 bool condition_expression();
@@ -106,7 +117,8 @@ enum Errors {
     MISSING_FUNCTION_ERROR = 263,
     MISSING_ROUND_BRACKET_ERROR = 264,
     ILLEGAL_PARAMETER_ERROR = 265,
-    ILLEGAL_EXECUTION_ERROR = 266,
+    BAD_DECLARATION_ERROR = 266,
+    BAD_EXECUTION_ERROR = 267,
 
 };
 

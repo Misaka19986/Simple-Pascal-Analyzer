@@ -41,17 +41,22 @@ int main(int argc, char* argv[]) {
     core::err = fopen("middle.err", "w");  // Clean middle.err
     core::err = fopen("middle.err", "a");
 
-    lexer::scan();
-    if (parser_flag) {
-        fclose(core::in);
-        core::in = fopen("middle.dyd", "r");
-        fclose(core::out);
-        core::out = fopen("middle.dys", "w");
+    if (lexer::scan()) {
+        if (parser_flag) {
+            fclose(core::in);
+            core::in = fopen("middle.dyd", "r");
+            fclose(core::out);
+            core::out = fopen("middle.dys", "w");
 
-        if (parser::parser())
-            printf("parse success\n");
-        else
-            printf("parse failed\n");
+            if (parser::parser())
+                printf("parse success\n");
+            else
+                printf("parse failed\n");
+        }
+
+        printf("compile done\n");
+    } else {
+        printf("lexical analysis failed\n");
     }
 
     fclose(core::in);

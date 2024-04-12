@@ -5,7 +5,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [],
+            "args": [
+                "../test/test2.pas"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

@@ -5,11 +5,12 @@
  * Check if the character forms a valid token, and do output.
  *
  */
-void lexer::scan() {
+bool lexer::scan() {
     printf("\nlexer begin\n");
     fprintf(core::err, "--lexer\n");
 
     std::string token = "";
+    bool flag = false;
 
     char ch = fgetc(core::in);
     while (!feof(core::in)) {
@@ -39,9 +40,10 @@ void lexer::scan() {
 
             int symbol = check_keyword_type(token);
 
-            if (token.length() > 16)
+            if (token.length() > 16) {
                 put_error(token, INVALID_LENGTH_ERROR);
-            else
+                flag = true;
+            } else
                 put_token(token, symbol);
         } else {
             token.clear();
@@ -115,16 +117,20 @@ void lexer::scan() {
                     break;
             }
 
-            if (symbol >= 255)
+            if (symbol >= 255) {
                 put_error(token, symbol);
-            else
+                flag = true;
+            } else
                 put_token(token, symbol);
         }
     }
 
     put_token("EOF", EOF_);
 
-    return;
+    if (flag)
+        return false;
+    else
+        return true;
 }
 
 /**
