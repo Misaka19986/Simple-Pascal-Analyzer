@@ -7,6 +7,16 @@
  */
 std::vector<std::string> token;
 
+/*
+ * sometimes declaration or execution can be an empty statement
+ * but next parser cant check that only through tokens, so we need
+ * a new variable
+ */
+bool is_declaration_blank = false;
+bool is_execution_blank = false;
+bool is_item_blank = false;
+bool is_expression_blank = false;
+
 bool parser::parser() {
     printf("\nparser begin\n");
     fprintf(core::err, "--parser\n");
@@ -149,8 +159,17 @@ bool parser::declaration_table() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (declaration()) {
-        parse_next_token();
+        if (is_declaration_blank) {
+            // declaration is blank
+            // then token stops at ';' or 'end'
+            // no need to parse next token
+        } else {
+            // declaration is not blank
+            // so go next token to check if it is a loop
+            parse_next_token();
+        }
         if (declaration_table_prime()) {
+            is_declaration_blank = false;
             return true;
         } else {
             goto bad;
@@ -161,6 +180,7 @@ bool parser::declaration_table() {
     }
 
 bad:
+    is_declaration_blank = false;
     return false;
 }
 
@@ -171,24 +191,34 @@ bool parser::declaration_table_prime() {
     if (match(SEMICOLON)) {
         parse_next_token();
         if (declaration()) {
+            if (is_declaration_blank) {
+                // do nothing
+            } else {
+                parse_next_token();
+            }
             if (declaration_table_prime()) {
+                is_declaration_blank = false;
                 return true;
             } else {
                 goto bad;
             }
         } else {
+            is_declaration_blank = false;
             return true;
             // matching the ';' already prove legal
             // if there is something behind the ';' and it's not declaration
             // then we have left the scope, leave the token to next checker
         }
-    } else if (match(END)) {
-        return true;  // no more declaration
+    } else if (is_declaration_blank && match(END)) {
+        is_declaration_blank = false;
+        return true;
     } else {
+        put_error(MISSING_SEMICOLON_ERROR);
         goto bad;
     }
 
 bad:
+    is_declaration_blank = false;
     return false;
 }
 
@@ -197,12 +227,16 @@ bool parser::declaration() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (variable_declaration()) {
+        is_declaration_blank = false;
         return true;
     } else if (function_declaration()) {
+        is_declaration_blank = false;
         return true;
     } else if (match(SEMICOLON)) {
+        is_declaration_blank = true;
         return true;  // declaration is blank
     } else if (match(END)) {
+        is_declaration_blank = true;
         return true;  // declaration is blank
     } else {
         goto bad;
@@ -361,7 +395,12 @@ bool parser::execution_table() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (execution()) {
+        // execution need to look forward to check
+        // if the loop is ended
+        // so execution() makes the decisions about
+        // how to parse next token
         if (execution_table_prime()) {
+            is_execution_blank = false;
             return true;
         } else {
             goto bad;
@@ -370,6 +409,7 @@ bool parser::execution_table() {
         goto bad;
     }
 bad:
+    is_execution_blank = false;
     return false;
 }
 
@@ -380,24 +420,33 @@ bool parser::execution_table_prime() {
     if (match(SEMICOLON)) {
         parse_next_token();
         if (execution()) {
+            // execution need to look forward to check
+            // if the loop is ended
+            // so execution() makes the decisions about
+            // how to parse next token
             if (execution_table_prime()) {
+                is_execution_blank = false;
                 return true;
             } else {
                 goto bad;
             }
         } else {
+            is_execution_blank = false;
             return true;
             // matching the ';' already prove legal
             // if there is something behind the ';' and it's not execution
             // then we have left the scope, leave the token to next checker
         }
-    } else if (match(END)) {
+    } else if (is_execution_blank && match(END)) {
+        is_execution_blank = false;
         return true;
     } else {
+        put_error(MISSING_SEMICOLON_ERROR);
         goto bad;
     }
 
 bad:
+    is_execution_blank = false;
     return false;
 }
 
@@ -406,16 +455,26 @@ bool parser::execution() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (read_statement()) {
+        is_execution_blank = false;
+        parse_next_token();
         return true;
     } else if (write_statement()) {
+        is_execution_blank = false;
+        parse_next_token();
         return true;
     } else if (assignment()) {
+        is_execution_blank = false;
+        // assignment need to look forward to check
+        // if it is ended
         return true;
     } else if (condition()) {
+        is_execution_blank = false;
         return true;
     } else if (match(SEMICOLON)) {
+        is_execution_blank = true;
         return true;  // execution is blank
     } else if (match(END)) {
+        is_execution_blank = true;
         return true;  // execution is blank
     } else {
         goto bad;
@@ -509,7 +568,11 @@ bool parser::expression() {
         if (expression_prime()) {
             return true;
         } else {
-            goto bad;
+            // expression is a combinations of items
+            // even it is followed by a illegal token
+            // the scanned part is legal
+            // leave the illegal part to upper class
+            return true;
         }
     } else {
         goto bad;
@@ -529,11 +592,18 @@ bool parser::expression_prime() {
             if (expression_prime()) {
                 return true;
             } else {
-                goto bad;
+                // expression is a combinations of items
+                // even it is followed by a illegal token
+                // the scanned part is legal
+                // leave the illegal part to upper class
+                return true;
             }
         } else {
             goto bad;
         }
+    } else if (match(SEMICOLON)) {
+        // no more item
+        return true;
     } else {
         goto bad;
     }
@@ -551,7 +621,11 @@ bool parser::item() {
         if (item_prime()) {
             return true;
         } else {
-            goto bad;
+            // item is a combinations of factors
+            // even it is followed by a illegal token
+            // the scanned part is legal
+            // leave the illegal part to upper class
+            return true;
         }
     } else {
         goto bad;

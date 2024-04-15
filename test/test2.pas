@@ -1,4 +1,6 @@
 begin
     integer n;
-    n:=1*2
+    integer d;
+    n:=1
+    d:=1*2*3-3*2;
 end
