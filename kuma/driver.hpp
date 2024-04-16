@@ -64,9 +64,8 @@ bool relational_operator();
 bool function_call();
 }  // namespace parser
 
-inline std::string keywords[] = {
-    "begin", "end",      "integer", "if",    "then",
-    "else",  "function", "read",    "write",
+inline std::vector<std::string> keywords = {
+    "begin", "end", "integer", "if", "then", "else", "function", "read", "write"
 };
 
 enum Symbols {
@@ -116,9 +115,10 @@ enum Errors {
     MISSING_IDENTIFIER_ERROR = 262,
     MISSING_FUNCTION_ERROR = 263,
     MISSING_ROUND_BRACKET_ERROR = 264,
-    ILLEGAL_PARAMETER_ERROR = 265,
-    BAD_DECLARATION_ERROR = 266,
-    BAD_EXECUTION_ERROR = 267,
+    MISSING_ELSE_ERROR = 265,
+    ILLEGAL_PARAMETER_ERROR = 266,
+    BAD_DECLARATION_ERROR = 267,
+    BAD_EXECUTION_ERROR = 268,
 
 };
 

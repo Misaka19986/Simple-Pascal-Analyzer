@@ -120,5 +120,5 @@ relational_operator : <
                     | <>
 
 # 21
-function_call : identifier(variable)
+function_call : identifier(expression)
                 | identifier()

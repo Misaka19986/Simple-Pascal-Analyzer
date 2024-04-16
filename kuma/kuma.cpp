@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     // }
 
     /* debug */
-    core::in = fopen("../test/test2.pas", "r");
+    core::in = fopen("../test/test1.pas", "r");
     parser_flag = true;
 
     core::out = fopen("middle.dyd", "w");

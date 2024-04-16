@@ -155,7 +155,7 @@ void lexer::put_token(std::string s, int symbol) {
  *
  */
 int lexer::check_keyword_type(std::string s) {
-    for (auto i = 0; i < keywords->length(); ++i) {
+    for (auto i = 0; i < keywords.size(); ++i) {
         if (s == keywords[i]) {
             return i + 1;
         }

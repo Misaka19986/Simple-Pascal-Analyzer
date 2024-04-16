@@ -12,10 +12,20 @@ std::vector<std::string> token;
  * but next parser cant check that only through tokens, so we need
  * a new variable
  */
+/*
+ * sometime the declaration/execution are not blank
+ * but they are illegal
+ */
+bool is_declaration_illegal = false;
 bool is_declaration_blank = false;
+bool is_execution_illegal = false;
 bool is_execution_blank = false;
-bool is_item_blank = false;
-bool is_expression_blank = false;
+
+/*
+ * when on condition, execution doesn't need a ';'
+ * which will course a disruption
+ */
+bool on_condition = false;
 
 bool parser::parser() {
     printf("\nparser begin\n");
@@ -62,7 +72,7 @@ bool parser::match(int symbol) {
 }
 
 void parser::put_error(int type) {
-    printf("putting an error :%d\n", type);
+    printf("putting an error :%d\n\n", type);
 
     switch (type) {
         case MISSING_BEGIN_ERROR:
@@ -95,6 +105,10 @@ void parser::put_error(int type) {
             break;
         case MISSING_ROUND_BRACKET_ERROR:
             fprintf(core::err, "missing '(' or ')': getting '%s', at line %s\n",
+                    token[0].c_str(), token[2].c_str());
+            break;
+        case MISSING_ELSE_ERROR:
+            fprintf(core::err, "missing 'else': getting '%s', at line %s\n",
                     token[0].c_str(), token[2].c_str());
             break;
         case ILLEGAL_PARAMETER_ERROR:
@@ -202,6 +216,10 @@ bool parser::declaration_table_prime() {
             } else {
                 goto bad;
             }
+        } else if (is_declaration_illegal){
+            put_error(BAD_DECLARATION_ERROR);
+            is_declaration_illegal = false;
+            return false;
         } else {
             is_declaration_blank = false;
             return true;
@@ -226,16 +244,23 @@ bool parser::declaration() {
     printf("declaration\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    if (variable_declaration()) {
-        is_declaration_blank = false;
-        return true;
-    } else if (function_declaration()) {
-        is_declaration_blank = false;
-        return true;
-    } else if (match(SEMICOLON)) {
+    if (match(INTEGER)) {
+        parse_next_token();
+        // variable_declaration and function_declaration
+        // both begin with integer
+        if (variable_declaration()) {
+            is_declaration_blank = false;
+            return true;
+        } else if (function_declaration()) {
+            is_declaration_blank = false;
+            return true;
+        } else {
+            is_declaration_illegal = true;
+        }
+    } else if (!is_declaration_illegal && match(SEMICOLON)) {
         is_declaration_blank = true;
         return true;  // declaration is blank
-    } else if (match(END)) {
+    } else if (!is_declaration_illegal && match(END)) {
         is_declaration_blank = true;
         return true;  // declaration is blank
     } else {
@@ -250,13 +275,8 @@ bool parser::variable_declaration() {
     printf("variable_declaration\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    if (match(INTEGER)) {
-        parse_next_token();
-        if (variable()) {
-            return true;
-        } else {
-            goto bad;
-        }
+    if (variable()) {
+        return true;
     } else {
         goto bad;
     }
@@ -283,35 +303,15 @@ bool parser::function_declaration() {
     printf("function_declaration\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    if (match(INTEGER)) {
+    if (match(FUNCTION)) {
         parse_next_token();
-        if (match(FUNCTION)) {
+        if (match(IDENTIFIER)) {
             parse_next_token();
-            if (match(IDENTIFIER)) {
+            if (match(LEFT_ROUND_BRACKET)) {
                 parse_next_token();
-                if (match(LEFT_ROUND_BRACKET)) {
+                if (parameter()) {  // parameter can be nothing
                     parse_next_token();
-                    if (parameter()) {  // parameter can be nothing
-                        parse_next_token();
-                        if (match(RIGHT_ROUND_BRACKET)) {
-                            parse_next_token();
-                            if (match(SEMICOLON)) {
-                                parse_next_token();
-                                if (function_body()) {
-                                    return true;
-                                } else {
-                                    goto bad;
-                                }
-                            } else {
-                                put_error(MISSING_SEMICOLON_ERROR);
-                                goto bad;
-                            }
-                        } else {
-                            put_error(MISSING_ROUND_BRACKET_ERROR);
-                            goto bad;
-                        }
-                    } else if (match(RIGHT_ROUND_BRACKET)) {  // parameter is
-                                                              // blank
+                    if (match(RIGHT_ROUND_BRACKET)) {
                         parse_next_token();
                         if (match(SEMICOLON)) {
                             parse_next_token();
@@ -328,19 +328,34 @@ bool parser::function_declaration() {
                         put_error(MISSING_ROUND_BRACKET_ERROR);
                         goto bad;
                     }
+                } else if (match(RIGHT_ROUND_BRACKET)) {  // parameter is
+                                                          // blank
+                    parse_next_token();
+                    if (match(SEMICOLON)) {
+                        parse_next_token();
+                        if (function_body()) {
+                            return true;
+                        } else {
+                            goto bad;
+                        }
+                    } else {
+                        put_error(MISSING_SEMICOLON_ERROR);
+                        goto bad;
+                    }
                 } else {
                     put_error(MISSING_ROUND_BRACKET_ERROR);
                     goto bad;
                 }
             } else {
-                put_error(MISSING_IDENTIFIER_ERROR);
+                put_error(MISSING_ROUND_BRACKET_ERROR);
                 goto bad;
             }
         } else {
-            put_error(MISSING_FUNCTION_ERROR);
+            put_error(MISSING_IDENTIFIER_ERROR);
             goto bad;
         }
     } else {
+        put_error(MISSING_FUNCTION_ERROR);
         goto bad;
     }
 
@@ -430,6 +445,10 @@ bool parser::execution_table_prime() {
             } else {
                 goto bad;
             }
+        } else if(is_execution_illegal){
+            put_error(BAD_EXECUTION_ERROR);
+            is_execution_illegal = false;
+            return false;
         } else {
             is_execution_blank = false;
             return true;
@@ -440,6 +459,9 @@ bool parser::execution_table_prime() {
     } else if (is_execution_blank && match(END)) {
         is_execution_blank = false;
         return true;
+        // } else if (on_condition && match(END)){
+        //     on_condition = false;
+        //     return true;
     } else {
         put_error(MISSING_SEMICOLON_ERROR);
         goto bad;
@@ -470,10 +492,10 @@ bool parser::execution() {
     } else if (condition()) {
         is_execution_blank = false;
         return true;
-    } else if (match(SEMICOLON)) {
+    } else if (!is_execution_illegal && match(SEMICOLON)) {
         is_execution_blank = true;
         return true;  // execution is blank
-    } else if (match(END)) {
+    } else if (!is_execution_illegal && match(END)) {
         is_execution_blank = true;
         return true;  // execution is blank
     } else {
@@ -492,14 +514,23 @@ bool parser::read_statement() {
         parse_next_token();
         if (match(LEFT_ROUND_BRACKET)) {
             parse_next_token();
-            if (match(RIGHT_ROUND_BRACKET)) {
-                return true;
+            if (variable()) {
+                parse_next_token();
+                if (match(RIGHT_ROUND_BRACKET)) {
+                    return true;
+                } else {
+                    put_error(MISSING_ROUND_BRACKET_ERROR);
+                    is_execution_illegal = true;
+                    goto bad;
+                }
             } else {
-                put_error(MISSING_ROUND_BRACKET_ERROR);
+                put_error(MISSING_IDENTIFIER_ERROR);
+                is_execution_illegal = true;
                 goto bad;
             }
         } else {
             put_error(MISSING_ROUND_BRACKET_ERROR);
+            is_execution_illegal = true;
             goto bad;
         }
     } else {
@@ -518,14 +549,23 @@ bool parser::write_statement() {
         parse_next_token();
         if (match(LEFT_ROUND_BRACKET)) {
             parse_next_token();
-            if (match(RIGHT_ROUND_BRACKET)) {
-                return true;
+            if (variable()) {
+                parse_next_token();
+                if (match(RIGHT_ROUND_BRACKET)) {
+                    return true;
+                } else {
+                    put_error(MISSING_ROUND_BRACKET_ERROR);
+                    is_execution_illegal = true;
+                    goto bad;
+                }
             } else {
-                put_error(MISSING_ROUND_BRACKET_ERROR);
+                put_error(MISSING_IDENTIFIER_ERROR);
+                is_execution_illegal = true;
                 goto bad;
             }
         } else {
             put_error(MISSING_ROUND_BRACKET_ERROR);
+            is_execution_illegal = true;
             goto bad;
         }
     } else {
@@ -547,9 +587,11 @@ bool parser::assignment() {
             if (expression()) {
                 return true;
             } else {
+                is_execution_illegal = true;
                 goto bad;
             }
         } else {
+            is_execution_illegal = true;
             goto bad;
         }
     } else {
@@ -617,7 +659,6 @@ bool parser::item() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (factor()) {
-        parse_next_token();
         if (item_prime()) {
             return true;
         } else {
@@ -642,7 +683,6 @@ bool parser::item_prime() {
     if (match(TIMES)) {
         parse_next_token();
         if (factor()) {
-            parse_next_token();
             if (item_prime()) {
                 return true;
             } else {
@@ -670,10 +710,22 @@ bool parser::factor() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (variable()) {
-        return true;
+        // it may be a function_call
+        parse_next_token();
+        if (match(LEFT_ROUND_BRACKET)) {
+            if (function_call()) {
+                parse_next_token();
+                return true;
+            } else {
+                goto bad;
+            }
+        } else {
+            // not a function call
+            // return anyway
+            return true;
+        }
     } else if (match(CONST_NUM)) {
-        return true;
-    } else if (function_call()) {
+        parse_next_token();
         return true;
     } else {
         goto bad;
@@ -687,31 +739,37 @@ bool parser::condition() {
     printf("condition\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
+    on_condition = true;
+
     if (match(IF)) {
         parse_next_token();
         if (condition_expression()) {
-            parse_next_token();
             if (match(THEN)) {
                 parse_next_token();
                 if (execution()) {
-                    parse_next_token();
                     if (match(ELSE)) {
                         parse_next_token();
                         if (execution()) {
                             return true;
                         } else {
+                            is_execution_illegal = true;
                             goto bad;
                         }
                     } else {
+                        put_error(MISSING_ELSE_ERROR);
+                        is_execution_illegal = true;
                         goto bad;
                     }
                 } else {
+                    is_execution_illegal = true;
                     goto bad;
                 }
             } else {
+                is_execution_illegal = true;
                 goto bad;
             }
         } else {
+            is_execution_illegal = true;
             goto bad;
         }
     } else {
@@ -719,6 +777,7 @@ bool parser::condition() {
     }
 
 bad:
+    on_condition = false;
     return false;
 }
 
@@ -727,7 +786,6 @@ bool parser::condition_expression() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (expression()) {
-        parse_next_token();
         if (relational_operator()) {
             parse_next_token();
             if (expression()) {
@@ -772,26 +830,19 @@ bool parser::function_call() {
     printf("function_call\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    if (match(IDENTIFIER)) {
+    if (match(LEFT_ROUND_BRACKET)) {
         parse_next_token();
-        if (match(LEFT_ROUND_BRACKET)) {
-            parse_next_token();
-            if (variable()) {
-                parse_next_token();
-                if (match(RIGHT_ROUND_BRACKET)) {
-                    return true;
-                } else {
-                    put_error(MISSING_ROUND_BRACKET_ERROR);
-                    goto bad;
-                }
-            } else if (match(RIGHT_ROUND_BRACKET)) {
-                // there is no parameter
+        if (expression()) {
+            if (match(RIGHT_ROUND_BRACKET)) {
                 return true;
             } else {
+                put_error(MISSING_ROUND_BRACKET_ERROR);
                 goto bad;
             }
+        } else if (match(RIGHT_ROUND_BRACKET)) {
+            // there is no parameter
+            return true;
         } else {
-            put_error(MISSING_ROUND_BRACKET_ERROR);
             goto bad;
         }
     } else {
