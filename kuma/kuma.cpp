@@ -10,31 +10,31 @@ int main(int argc, char* argv[]) {
     bool parser_flag = false;
 
     /* release */
-    // if (argc == 0)
-    //     core::in = stdin;  // no parameter
-    // else if (argc == 1) {
-    //     if (0 == strcmp(argv[0], "-p")) {  // 1 parameter
-    //         core::in = stdin;
-    //         parser_flag = true;
-    //     } else
-    //         core::in = fopen(argv[0], "r");
-    // } else if (argc == 2) {
-    //     for (int i = 0; i < argc; i++) {  // 2 parameter
-    //         std::string temp = argv[i];
-    //         if ("-p" == temp)
-    //             parser_flag = true;
-    //         else {
-    //             core::in = fopen(argv[i], "r");
-    //         }
-    //     }
-    // } else {
-    //     printf("too many parameter\n");
-    //     return 0;
-    // }
+    if (argc == 0)
+        core::in = stdin;  // no parameter
+    else if (argc == 1) {
+        if (0 == strcmp(argv[0], "-p")) {  // 1 parameter
+            core::in = stdin;
+            parser_flag = true;
+        } else
+            core::in = fopen(argv[0], "r");
+    } else if (argc == 2) {
+        for (int i = 0; i < argc; i++) {  // 2 parameter
+            std::string temp = argv[i];
+            if ("-p" == temp)
+                parser_flag = true;
+            else {
+                core::in = fopen(argv[i], "r");
+            }
+        }
+    } else {
+        printf("too many parameter\n");
+        return 0;
+    }
 
     /* debug */
-    core::in = fopen("../test/test1.pas", "r");
-    parser_flag = true;
+    // core::in = fopen("../test/test1.pas", "r");
+    // parser_flag = true;
 
     core::out = fopen("middle.dyd", "w");
 

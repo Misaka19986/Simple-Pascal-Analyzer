@@ -216,7 +216,7 @@ bool parser::declaration_table_prime() {
             } else {
                 goto bad;
             }
-        } else if (is_declaration_illegal){
+        } else if (is_declaration_illegal) {
             put_error(BAD_DECLARATION_ERROR);
             is_declaration_illegal = false;
             return false;
@@ -355,11 +355,12 @@ bool parser::function_declaration() {
             goto bad;
         }
     } else {
-        put_error(MISSING_FUNCTION_ERROR);
-        goto bad;
+        put_error(MISSING_IDENTIFIER_ERROR);
+        return false;
     }
 
 bad:
+    is_declaration_illegal = true;
     return false;
 }
 
@@ -370,7 +371,6 @@ bool parser::parameter() {
     if (variable()) {
         return true;
     } else {
-        put_error(ILLEGAL_PARAMETER_ERROR);
         goto bad;
     }
 bad:
@@ -445,7 +445,7 @@ bool parser::execution_table_prime() {
             } else {
                 goto bad;
             }
-        } else if(is_execution_illegal){
+        } else if (is_execution_illegal) {
             put_error(BAD_EXECUTION_ERROR);
             is_execution_illegal = false;
             return false;
