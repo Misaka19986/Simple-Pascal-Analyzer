@@ -20,4 +20,4 @@ test2:
 
 # Clean generated file
 clean:
-	$(RM) middle.* $(TARGET)
+	$(RM) middle.* $(TARGET) ./kuma ./parser

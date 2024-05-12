@@ -41,6 +41,9 @@ int main(int argc, char* argv[]) {
     core::err = fopen("middle.err", "w");  // Clean middle.err
     core::err = fopen("middle.err", "a");
 
+    core::var = fopen("middle.var", "w");
+    core::pro = fopen("middle.pro", "w");
+
     if (lexer::scan()) {
         if (parser_flag) {
             fclose(core::in);
@@ -62,6 +65,8 @@ int main(int argc, char* argv[]) {
     fclose(core::in);
     fclose(core::out);
     fclose(core::err);
+    fclose(core::var);
+    fclose(core::pro);
 
     return 0;
 }

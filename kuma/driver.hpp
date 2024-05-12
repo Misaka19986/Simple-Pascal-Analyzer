@@ -11,6 +11,8 @@ namespace core {
 inline FILE* in;
 inline FILE* out;
 inline FILE* err;
+inline FILE* var;
+inline FILE* pro;
 
 inline int lines = 1;
 }  // namespace core
@@ -28,6 +30,10 @@ bool parser();
 void parse_next_token();
 bool match(int symbol);
 void put_error(int type);
+
+int put_variable();
+int put_function();
+void print_all_table();
 
 /* states */
 bool program();
@@ -64,9 +70,17 @@ bool relational_operator();
 bool function_call();
 }  // namespace parser
 
-inline std::vector<std::string> keywords = {
-    "begin", "end", "integer", "if", "then", "else", "function", "read", "write"
+struct variable_table {
+    std::string name;
 };
+
+struct function_table {
+    std::string name;
+};
+
+inline std::vector<std::string> keywords = {"begin",    "end",  "integer",
+                                            "if",       "then", "else",
+                                            "function", "read", "write"};
 
 enum Symbols {
     /* keywords */
@@ -108,6 +122,8 @@ enum Errors {
     INVALID_ASSIGN_ERROR = 257,
 
     /* parser error */
+
+    /* missing keyword */
     MISSING_BEGIN_ERROR = 258,
     MISSING_END_ERROR = 259,
     MISSING_SEMICOLON_ERROR = 260,
@@ -116,10 +132,16 @@ enum Errors {
     MISSING_FUNCTION_ERROR = 263,
     MISSING_ROUND_BRACKET_ERROR = 264,
     MISSING_ELSE_ERROR = 265,
-    ILLEGAL_PARAMETER_ERROR = 266,
-    BAD_DECLARATION_ERROR = 267,
-    BAD_EXECUTION_ERROR = 268,
 
+    ILLEGAL_PARAMETER_ERROR = 266,
+    BAD_DECLARATION_ERROR = 267,  // debug
+    BAD_EXECUTION_ERROR = 268,    // debug0
+
+    /* variable-table & function-table */
+    UNDECLARED_VARIABLE_ERROR = 269,
+    UNDECLARED_FUNCTION_ERROR = 270,
+    DUPLICATED_VARIABLE_DECLARATION = 271,
+    DUPLICATED_FUNCTION_DECLARATION = 272,
 };
 
 #endif

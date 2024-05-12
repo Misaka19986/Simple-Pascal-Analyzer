@@ -8,12 +8,19 @@
 std::vector<std::string> token;
 
 /*
+ * to mark the scope of a variable;
+ * when match a begin, it plus 1 (entering the scope)
+ * when match a end, it minus 1 (leaving the scope)
+ */
+int level = 0;
+
+/*
  * sometimes declaration or execution can be an empty statement
  * but next parser cant check that only through tokens, so we need
  * a new variable
  */
 /*
- * sometime the declaration/execution are not blank
+ * and sometime the declaration/execution are not blank
  * but they are illegal
  */
 bool is_declaration_illegal = false;
@@ -22,10 +29,23 @@ bool is_execution_illegal = false;
 bool is_execution_blank = false;
 
 /*
+ * matching integer identifier doesn't mean that
+ * it is a variable declaration, it might be a wrong function
+ * declaration.
+ *
+ * if we match variable declaration, we need to parse next
+ * token to check if it is a wrong function declaration,
+ * which breaks the statement scope.
+ *
+ * so, we need a bool to mark this situation
+ */
+bool is_checking_function = false;
+
+/*
  * when on condition, execution doesn't need a ';'
  * which will course a disruption
  */
-bool on_condition = false;
+// bool on_condition = false;
 
 bool parser::parser() {
     printf("\nparser begin\n");
@@ -66,6 +86,11 @@ loop:
 
 bool parser::match(int symbol) {
     if (atoi(token[1].c_str()) == symbol) {
+        if (symbol == BEGIN)
+            level += 1;
+        else if (symbol == END)
+            level -= 1;
+
         return true;
     } else
         return false;
@@ -100,8 +125,8 @@ void parser::put_error(int type) {
                 token[0].c_str(), token[2].c_str());
             break;
         case MISSING_FUNCTION_ERROR:
-            fprintf(core::err, "missing 'function': getting '%s', at line %s\n",
-                    token[0].c_str(), token[2].c_str());
+            fprintf(core::err, "missing 'function': at line %s\n",
+                    token[2].c_str());
             break;
         case MISSING_ROUND_BRACKET_ERROR:
             fprintf(core::err, "missing '(' or ')': getting '%s', at line %s\n",
@@ -122,6 +147,22 @@ void parser::put_error(int type) {
         case BAD_EXECUTION_ERROR:
             fprintf(core::err, "illegal execution statements: at line %s\n",
                     token[2].c_str());
+            break;
+        case UNDECLARED_VARIABLE_ERROR:
+            fprintf(core::err, "undeclared variable:'%s', at line %s\n",
+                    token[0].c_str(), token[2].c_str());
+            break;
+        case UNDECLARED_FUNCTION_ERROR:
+            fprintf(core::err, "undeclared function:'%s', at line %s\n",
+                    token[0].c_str(), token[2].c_str());
+            break;
+        case DUPLICATED_VARIABLE_DECLARATION:
+            fprintf(core::err, "variable has been declared:'%s', at line %s\n",
+                    token[0].c_str(), token[2].c_str());
+            break;
+        case DUPLICATED_FUNCTION_DECLARATION:
+            fprintf(core::err, "function has been declared:'%s', at line %s\n",
+                    token[0].c_str(), token[2].c_str());
             break;
     }
 }
@@ -173,17 +214,20 @@ bool parser::declaration_table() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (declaration()) {
-        if (is_declaration_blank) {
+        if (is_declaration_blank || is_checking_function) {
             // declaration is blank
-            // then token stops at ';' or 'end'
+            // then token stops at ';' or 'end' or something else
             // no need to parse next token
+            // remain is_declaration_blank true
+            is_checking_function = false;
         } else {
-            // declaration is not blank
+            // declaration is not blank and legal
             // so go next token to check if it is a loop
             parse_next_token();
         }
         if (declaration_table_prime()) {
             is_declaration_blank = false;
+            is_declaration_illegal = false;
             return true;
         } else {
             goto bad;
@@ -195,6 +239,7 @@ bool parser::declaration_table() {
 
 bad:
     is_declaration_blank = false;
+    is_declaration_illegal = false;
     return false;
 }
 
@@ -205,13 +250,14 @@ bool parser::declaration_table_prime() {
     if (match(SEMICOLON)) {
         parse_next_token();
         if (declaration()) {
-            if (is_declaration_blank) {
-                // do nothing
+            if (is_declaration_blank || is_checking_function) {
+                is_checking_function = false;
             } else {
                 parse_next_token();
             }
             if (declaration_table_prime()) {
                 is_declaration_blank = false;
+                is_declaration_illegal = false;
                 return true;
             } else {
                 goto bad;
@@ -220,23 +266,23 @@ bool parser::declaration_table_prime() {
             put_error(BAD_DECLARATION_ERROR);
             is_declaration_illegal = false;
             return false;
-        } else {
-            is_declaration_blank = false;
-            return true;
-            // matching the ';' already prove legal
-            // if there is something behind the ';' and it's not declaration
-            // then we have left the scope, leave the token to next checker
         }
-    } else if (is_declaration_blank && match(END)) {
+        // matching the ';' or nothing already prove legal
+        // if there is something behind the ';' and it's not declaration
+        // then we have left the scope, leave the token to next checker
+    } else if (is_declaration_blank) {
+        // declaration is blank, and no more declaration
         is_declaration_blank = false;
         return true;
     } else {
+        // declaration is not blank, but it doesn't end with ';'
         put_error(MISSING_SEMICOLON_ERROR);
         goto bad;
     }
 
 bad:
     is_declaration_blank = false;
+    is_declaration_illegal = false;
     return false;
 }
 
@@ -245,26 +291,36 @@ bool parser::declaration() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (match(INTEGER)) {
+        is_declaration_blank = false;
+        is_declaration_illegal = false;
         parse_next_token();
         // variable_declaration and function_declaration
         // both begin with integer
         if (variable_declaration()) {
-            is_declaration_blank = false;
+            is_checking_function = true;
+            // check if it is a function declaration
+            parse_next_token();
+            if (match(LEFT_ROUND_BRACKET)) {
+                is_declaration_illegal = true;
+                put_error(MISSING_FUNCTION_ERROR);
+                goto bad;
+            } else if (match(IDENTIFIER)) {
+                is_declaration_illegal = true;
+                goto bad;
+            }
+
             return true;
         } else if (function_declaration()) {
-            is_declaration_blank = false;
             return true;
         } else {
+            // illegal declaration
             is_declaration_illegal = true;
+            goto bad;
         }
-    } else if (!is_declaration_illegal && match(SEMICOLON)) {
-        is_declaration_blank = true;
-        return true;  // declaration is blank
-    } else if (!is_declaration_illegal && match(END)) {
-        is_declaration_blank = true;
-        return true;  // declaration is blank
     } else {
-        goto bad;
+        // match nothing
+        is_declaration_blank = true;
+        return true;
     }
 
 bad:
@@ -276,6 +332,10 @@ bool parser::variable_declaration() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (variable()) {
+        // parse_next_token();
+        // if(match(LEFT_ROUND_BRACKET)){
+        //     // it might be a function
+        // }
         return true;
     } else {
         goto bad;
@@ -328,23 +388,6 @@ bool parser::function_declaration() {
                         put_error(MISSING_ROUND_BRACKET_ERROR);
                         goto bad;
                     }
-                } else if (match(RIGHT_ROUND_BRACKET)) {  // parameter is
-                                                          // blank
-                    parse_next_token();
-                    if (match(SEMICOLON)) {
-                        parse_next_token();
-                        if (function_body()) {
-                            return true;
-                        } else {
-                            goto bad;
-                        }
-                    } else {
-                        put_error(MISSING_SEMICOLON_ERROR);
-                        goto bad;
-                    }
-                } else {
-                    put_error(MISSING_ROUND_BRACKET_ERROR);
-                    goto bad;
                 }
             } else {
                 put_error(MISSING_ROUND_BRACKET_ERROR);
@@ -368,11 +411,18 @@ bool parser::parameter() {
     printf("parameter\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    if (variable()) {
-        return true;
+    if (match(INTEGER)) {
+        parse_next_token();
+        if (variable()) {
+            return true;
+        } else {
+            goto bad;
+        }
     } else {
+        put_error(ILLEGAL_PARAMETER_ERROR);
         goto bad;
     }
+
 bad:
     return false;
 }
@@ -416,15 +466,19 @@ bool parser::execution_table() {
         // how to parse next token
         if (execution_table_prime()) {
             is_execution_blank = false;
+            is_execution_illegal = false;
             return true;
         } else {
             goto bad;
         }
     } else {
+        put_error(BAD_EXECUTION_ERROR);
         goto bad;
     }
+
 bad:
     is_execution_blank = false;
+    is_declaration_illegal = false;
     return false;
 }
 
@@ -441,6 +495,7 @@ bool parser::execution_table_prime() {
             // how to parse next token
             if (execution_table_prime()) {
                 is_execution_blank = false;
+                is_execution_illegal = false;
                 return true;
             } else {
                 goto bad;
@@ -449,26 +504,26 @@ bool parser::execution_table_prime() {
             put_error(BAD_EXECUTION_ERROR);
             is_execution_illegal = false;
             return false;
-        } else {
-            is_execution_blank = false;
-            return true;
-            // matching the ';' already prove legal
-            // if there is something behind the ';' and it's not execution
-            // then we have left the scope, leave the token to next checker
         }
-    } else if (is_execution_blank && match(END)) {
+        // matching the ';' already prove legal
+        // if there is something behind the ';' and it's not execution
+        // then we have left the scope, leave the token to next checker
+    } else if (is_execution_blank) {
+        // execution is blank, and no more execution
         is_execution_blank = false;
         return true;
         // } else if (on_condition && match(END)){
         //     on_condition = false;
         //     return true;
     } else {
+        // execution is not blank, but it doesn't end with ';'
         put_error(MISSING_SEMICOLON_ERROR);
         goto bad;
     }
 
 bad:
     is_execution_blank = false;
+    is_execution_illegal = false;
     return false;
 }
 
@@ -492,13 +547,13 @@ bool parser::execution() {
     } else if (condition()) {
         is_execution_blank = false;
         return true;
-    } else if (!is_execution_illegal && match(SEMICOLON)) {
+    } else if (!is_execution_illegal) {
+        // no match and no illegal
+        // so execution is blank
         is_execution_blank = true;
-        return true;  // execution is blank
-    } else if (!is_execution_illegal && match(END)) {
-        is_execution_blank = true;
-        return true;  // execution is blank
+        return true;
     } else {
+        // illegal
         goto bad;
     }
 
@@ -739,8 +794,6 @@ bool parser::condition() {
     printf("condition\n");
     printf("parsing '%s'\n\n", token[0].c_str());
 
-    on_condition = true;
-
     if (match(IF)) {
         parse_next_token();
         if (condition_expression()) {
@@ -777,7 +830,6 @@ bool parser::condition() {
     }
 
 bad:
-    on_condition = false;
     return false;
 }
 

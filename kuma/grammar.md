@@ -40,8 +40,11 @@ digit : ...
 # 7
 function_declaration : integer function identifier(parameter) ; function_body
 
+# 7'
+function_declaration_prime : (parameter)
+
 # 8
-parameter : variable
+parameter : integer variable
 
 # 9
 function_body : begin declaration_table ; execution_table end
