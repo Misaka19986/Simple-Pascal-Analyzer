@@ -2,7 +2,10 @@
 *.dyd
 *.err
 *.dys
+*.doc
 
 # middle files for debug
 kuma
 lexer
+
+.gitgnore

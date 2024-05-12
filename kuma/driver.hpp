@@ -31,8 +31,10 @@ void parse_next_token();
 bool match(int symbol);
 void put_error(int type);
 
-int put_variable();
-int put_function();
+int put_variable(std::string name, bool kind);
+bool check_variable(std::string name);
+int put_function(std::string name);
+bool check_function(std::string name);
 void print_all_table();
 
 /* states */
@@ -70,17 +72,30 @@ bool relational_operator();
 bool function_call();
 }  // namespace parser
 
-struct variable_table {
+struct variable_table_type {
     std::string name;
+    std::string proc;
+    bool is_parameter;  // false stands for variable, true stands for parameter
+    std::string type;
+    int level;
+    int index;  // index of the vector
 };
 
-struct function_table {
+struct function_table_type {
     std::string name;
+    std::string proc;
+    std::string type;  // return type
+    int level;
+    int first_index;  // first variable index in variable_table
+    int last_index;   // last variable index in variable_table
 };
 
 inline std::vector<std::string> keywords = {"begin",    "end",  "integer",
                                             "if",       "then", "else",
                                             "function", "read", "write"};
+
+inline std::vector<struct variable_table_type> variable_table;
+inline std::vector<struct function_table_type> function_table;
 
 enum Symbols {
     /* keywords */

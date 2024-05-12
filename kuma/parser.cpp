@@ -42,6 +42,13 @@ bool is_execution_blank = false;
 bool is_checking_function = false;
 
 /*
+ * when generating a variable, it needs to know
+ * which proc it is in
+ */
+
+int current_function_index = 0;
+
+/*
  * when on condition, execution doesn't need a ';'
  * which will course a disruption
  */
@@ -51,10 +58,13 @@ bool parser::parser() {
     printf("\nparser begin\n");
     fprintf(core::err, "--parser\n");
 
-    if (program())
+    if (program()) {
+        print_all_table();
         return true;
-    else
+    } else {
+        print_all_table();
         return false;
+    }
 }
 
 void parser::parse_next_token() {
@@ -86,11 +96,13 @@ loop:
 
 bool parser::match(int symbol) {
     if (atoi(token[1].c_str()) == symbol) {
-        if (symbol == BEGIN)
-            level += 1;
-        else if (symbol == END)
-            level -= 1;
-
+        if (symbol == BEGIN) {
+            level++;
+            current_function_index++;
+        } else if (symbol == END) {
+            level--;
+            current_function_index--;
+        }
         return true;
     } else
         return false;
@@ -167,14 +179,100 @@ void parser::put_error(int type) {
     }
 }
 
+int put_variable(std::string name, bool kind) {
+    struct variable_table_type temp;
+    temp.name = name;
+    temp.proc = function_table[current_function_index].name;
+    temp.is_parameter = kind;
+    temp.type = "integer";
+    temp.level = level;
+    temp.index = variable_table.size();
+
+    if (!check_variable(name)) {
+        variable_table.push_back(temp);
+        return 1;
+    } else {
+        return DUPLICATED_VARIABLE_DECLARATION;
+    }
+}
+
+bool check_variable(std::string name) {
+    for (int i = 0; i < variable_table.size(); i++) {
+        struct variable_table_type temp = variable_table[i];
+        if (name == temp.name) {
+            if (function_table[current_function_index].name == temp.proc &&
+                level == temp.level) {
+                // current function has declared this variable
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+int put_function(std::string name) {
+    struct function_table_type temp;
+    temp.name = name;
+    if (function_table.size() == 0) {
+        temp.proc = "";
+    } else {
+        temp.proc = function_table[current_function_index].name;
+    }
+    temp.type = "integer";
+    temp.level = level;
+    temp.first_index = 0;
+    temp.last_index = 0;
+
+    if (!check_function(name)) {
+        function_table.push_back(temp);
+        return 1;
+    } else {
+        return DUPLICATED_FUNCTION_DECLARATION;
+    }
+}
+bool check_function(std::string name) {
+    for (int i = 0; i < function_table.size(); i++) {
+        struct function_table_type temp = function_table[i];
+        if (name == temp.name) {
+            if (function_table[current_function_index].name == temp.proc &&
+                level == temp.level) {
+                // current function has declared this variable
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void print_all_table() {
+    fprintf(core::var, "name\tproc\tis_parameter\ttype\tlevel\tindex\n");
+    for (int i = 0; i < variable_table.size(); i++) {
+        struct variable_table_type temp = variable_table[i];
+        fprintf(core::var, "%s\t%s\t%d\t%s\t%d\t%d\n", temp.name.c_str(),
+                temp.proc.c_str(), temp.is_parameter, temp.type.c_str(),
+                temp.level, temp.index);
+    }
+
+    fprintf(core::pro, "name\tproc\ttype\tlevel\tfirst_index\tlast_index\n");
+    for (int i = 0; i < function_table.size(); i++) {
+        struct function_table_type temp = function_table[i];
+        fprintf(core::pro, "%s\t%s\t%s\t%d\t%d\t%d\n", temp.name.c_str(),
+                temp.proc.c_str(), temp.type.c_str(), temp.level,
+                temp.first_index, temp.last_index);
+    }
+}
+
 bool parser::program() {
     printf("program\n\n");
 
     parse_next_token();
-    if (sub_program())
+    if (sub_program()) {
         return true;
-    else
+    } else {
         return false;
+    }
 }
 
 bool parser::sub_program() {
@@ -182,9 +280,11 @@ bool parser::sub_program() {
     printf("parsing '%s'\n\n", token[0].c_str());
 
     if (match(BEGIN)) {
+        put_function("main");
         parse_next_token();
         if (declaration_table()) {
-            // to check declaration is ended, we have move to next token behind
+            // to check declaration is ended, we have move to next token
+            // behind
             // ';'
             // so we dont check ';'
             if (execution_table()) {
